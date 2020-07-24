@@ -1,12 +1,14 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
-using Nvd.SubProcess.Native;
+using WebTty.Exec.Native;
 
-namespace Nvd.SubProcess
+namespace WebTty.Exec
 {
     public sealed partial class Process
     {
@@ -67,7 +69,7 @@ namespace Nvd.SubProcess
             if (result != 0) throw new Win32Exception(result, "Could not create pseudo console.");
 
             startupInfo = ConfigureProcessThread(_ptyHandle, (IntPtr)Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE);
-            processInfo = RunProcess(ref startupInfo, _fileName);
+            processInfo = RunProcess(ref startupInfo, _fileName, _argv.ToArray());
 
             if (_attr.RedirectStdin)
             {
@@ -99,6 +101,7 @@ namespace Nvd.SubProcess
             {
                 Kernel32.CloseHandle(processInfo.hProcess);
             }
+
             if (processInfo.hThread != IntPtr.Zero)
             {
                 Kernel32.CloseHandle(processInfo.hThread);
@@ -113,6 +116,11 @@ namespace Nvd.SubProcess
             };
 
             reset.WaitOne(Timeout.Infinite);
+
+            Kernel32.GetExitCodeProcess(processInfo.hProcess, out var exitCode);
+
+            // I assume I can safely cast this one, lets hope no one uses an exit value higher then 2147483647
+            ExitCode = (int)exitCode;
         }
 
         private void SetWindowSizeCore(int height, int width)
@@ -191,14 +199,15 @@ namespace Nvd.SubProcess
             return startupInfo;
         }
 
-        private static PROCESS_INFORMATION RunProcess(ref STARTUPINFOEX sInfoEx, string commandLine)
+        private static PROCESS_INFORMATION RunProcess(ref STARTUPINFOEX sInfoEx, string command, string[] args)
         {
-            int securityAttributeSize = Marshal.SizeOf<SECURITY_ATTRIBUTES>();
+            var commandLine = BuildCommandLine(command, args);
+            var securityAttributeSize = Marshal.SizeOf<SECURITY_ATTRIBUTES>();
             var pSec = new SECURITY_ATTRIBUTES { nLength = securityAttributeSize };
             var tSec = new SECURITY_ATTRIBUTES { nLength = securityAttributeSize };
             var success = Kernel32.CreateProcess(
                 lpApplicationName: null,
-                lpCommandLine: commandLine,
+                lpCommandLine: commandLine.ToString(), 
                 lpProcessAttributes: ref pSec,
                 lpThreadAttributes: ref tSec,
                 bInheritHandles: false,
@@ -208,12 +217,39 @@ namespace Nvd.SubProcess
                 lpStartupInfo: ref sInfoEx,
                 lpProcessInformation: out var processInfo
             );
+
             if (!success)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not create process. {commandLine}");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not create process. {command}");
             }
 
             return processInfo;
+        }
+
+        private static StringBuilder BuildCommandLine(string executableFileName, string[] args)
+        {
+            var commandLine = new StringBuilder();
+            string fileName = executableFileName.Trim();
+            bool fileNameIsQuoted = fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
+            if (!fileNameIsQuoted)
+            {
+                commandLine.Append('"');
+            }
+
+            commandLine.Append(fileName);
+
+            if (!fileNameIsQuoted)
+            {
+                commandLine.Append('"');
+            }
+
+            foreach (var arg in args)
+            {
+                commandLine.Append(' ');
+                commandLine.Append(arg);
+            }
+
+            return commandLine;
         }
 
         public static string GetDefaultShell() => "cmd";

@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
-using WebTty.Exec.Native;
+using Nvd.SubProcess.Native;
 
-namespace WebTty.Exec
+namespace Nvd.SubProcess
 {
     public sealed partial class Process
     {

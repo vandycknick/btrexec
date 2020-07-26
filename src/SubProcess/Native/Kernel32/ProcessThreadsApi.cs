@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace WebTty.Exec.Native
+namespace Nvd.SubProcess.Native
 {
     internal static partial class Kernel32
     {

@@ -81,58 +81,33 @@ namespace Emulator
         }
 
         
-        private static string ConsoleKeyToAnsiEscape(ConsoleKeyInfo key)
-        {
-            switch (key.Key)
+        private static string ConsoleKeyToAnsiEscape(ConsoleKeyInfo key) =>
+            key.Key switch
             {
-                case ConsoleKey.UpArrow:
-                    return "\x1bOA";
-                case ConsoleKey.DownArrow:
-                    return "\x1bOB";
-                case ConsoleKey.LeftArrow:
-                    return "\x1bOD";
-                case ConsoleKey.RightArrow:
-                    return "\x1bOC";
-                case ConsoleKey.Home:
-                    return "\x1bOH";
-                case ConsoleKey.End:
-                    return "\x1bOF";
-                case ConsoleKey.Delete:
-                    return "\x1b[3~";
-                case ConsoleKey.Insert:
-                    return "\x1b[2~";
-                case ConsoleKey.PageUp:
-                    return "\x1b[5~";
-                case ConsoleKey.PageDown:
-                    return "\x1b[6~";
-                case ConsoleKey.F1:
-                    return "\x1bOP";
-                case ConsoleKey.F2:
-                    return "\x1bOQ";
-                case ConsoleKey.F3:
-                    return "\x1bOR";
-                case ConsoleKey.F4:
-                    return "\x1bOS";
-                case ConsoleKey.F5:
-                    return "\x1b[15~";
-                case ConsoleKey.F6:
-                    return "\x1b[17~";
-                case ConsoleKey.F7:
-                    return "\x1b[18~";
-                case ConsoleKey.F8:
-                    return "\x1b[19~";
-                case ConsoleKey.F9:
-                    return "\x1b[20~";
-                case ConsoleKey.F10:
-                    return "\x1b[21~";
-                case ConsoleKey.F11:
-                    return "\x1b[23~";
-                case ConsoleKey.F12:
-                    return "\x1b[24~";
-                default:
-                    return $"{key.KeyChar}";
-            }
-        }
+                ConsoleKey.UpArrow => "\x1bOA",
+                ConsoleKey.DownArrow => "\x1bOB",
+                ConsoleKey.LeftArrow => "\x1bOD",
+                ConsoleKey.RightArrow => "\x1bOC",
+                ConsoleKey.Home => "\x1bOH",
+                ConsoleKey.End => "\x1bOF",
+                ConsoleKey.Delete => "\x1b[3~",
+                ConsoleKey.Insert => "\x1b[2~",
+                ConsoleKey.PageUp => "\x1b[5~",
+                ConsoleKey.PageDown => "\x1b[6~",
+                ConsoleKey.F1 => "\x1bOP",
+                ConsoleKey.F2 => "\x1bOQ",
+                ConsoleKey.F3 => "\x1bOR",
+                ConsoleKey.F4 => "\x1bOS",
+                ConsoleKey.F5 => "\x1b[15~",
+                ConsoleKey.F6 => "\x1b[17~",
+                ConsoleKey.F7 => "\x1b[18~",
+                ConsoleKey.F8 => "\x1b[19~",
+                ConsoleKey.F9 => "\x1b[20~",
+                ConsoleKey.F10 => "\x1b[21~",
+                ConsoleKey.F11 => "\x1b[23~",
+                ConsoleKey.F12 => "\x1b[24~",
+                _ => $"{key.KeyChar}",
+            };
 
         public static Task WaitAsync(this IProcess proc)
         {

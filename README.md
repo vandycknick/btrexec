@@ -11,8 +11,8 @@ Copyright 2020 [Nick Van Dyck](https://nvd.codes)
 
 MIT
 
-[ci-url]: https://github.com/nickvdyck/subprocess.cs
-[ci-badge]: https://github.com/nickvdyck/subprocess.cs/workflows/Main/badge.svg
+[ci-url]: https://github.com/nickvdyck/subprocess
+[ci-badge]: https://github.com/nickvdyck/subprocess/workflows/Main/badge.svg
 
 [nuget-package-url]: https://www.nuget.org/packages/Nvd.SubProcess/
 [nuget-package-badge]: https://img.shields.io/nuget/v/Nvd.SubProcess.svg?style=flat-square&label=nuget

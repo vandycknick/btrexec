@@ -13,6 +13,10 @@ SANDBOX_EMULATOR	:= sandbox/Emulator/Emulator.csproj
 default:
 	$(MAKE) package
 
+.PHONY: setup
+setup:
+	dotnet restore
+
 .PHONY: package
 package:
 	dotnet pack $(LIB) \

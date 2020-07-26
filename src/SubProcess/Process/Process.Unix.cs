@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using Microsoft.Win32.SafeHandles;
 using Nvd.SubProcess.Native;
 using Nvd.SubProcess.Utils;
-using Microsoft.Win32.SafeHandles;
-using System.IO;
 
 namespace Nvd.SubProcess
 {
@@ -12,6 +12,8 @@ namespace Nvd.SubProcess
     {
         private const int READ_END_OF_PIPE = 0;
         private const int WRITE_END_OF_PIPE = 1;
+
+        private int _masterPtyFd = -1;
 
         private void StartCore()
         {
@@ -46,7 +48,8 @@ namespace Nvd.SubProcess
                 redirectStderr: _attr.RedirectStderr,
                 stdin: out var stdin,
                 stdout: out var stdout,
-                stderr: out var stderr
+                stderr: out var stderr,
+                master: out _masterPtyFd
             );
 
             if (_attr.RedirectStdin)
@@ -133,20 +136,21 @@ namespace Nvd.SubProcess
 
         private void SetWindowSizeCore(int height, int width)
         {
+            if (_masterPtyFd ==  -1)
+            {
+                throw new InvalidOperationException("Can't resize window on a process without a pty!");
+            }
+
             var size = new winsize
             {
                 ws_col = (ushort)width,
                 ws_row = (ushort)height,
             };
 
-            // TODO: add some error handling, or find a better way to key a reference to the master fd
-            var stream = (FileStream)Stdin.BaseStream;
-            var fd = stream.SafeFileHandle.DangerousGetHandle();
-
             int retVal;
             do
             {
-                retVal = Libc.ioctl((int)fd, Libc.TIOCSWINSZ, ref size);
+                retVal = Libc.ioctl((int)_masterPtyFd, Libc.TIOCSWINSZ, ref size);
             } while (Error.ShouldRetrySyscall(retVal));
 
             Error.ThrowExceptionForLastErrorIf(retVal);
@@ -189,7 +193,11 @@ namespace Nvd.SubProcess
             string filename, string[] argv, string[] envp,
             string cwd, bool useTty, bool redirectStdin,
             bool redirectStdout, bool redirectStderr,
-            out int stdin, out int stdout, out int stderr
+            out int stdin, out int stdout, out int stderr,
+            // TODO: remove this one, I don't like this current implementation
+            // I think I should move Pty into a seperate entity. That way this method
+            // should accept a Pty object of some sorts.
+            out int master
         )
         {
             byte** argvPtr = null;
@@ -324,12 +332,14 @@ namespace Nvd.SubProcess
                     stdin = masterFd;
                     stdout = masterFd;
                     stderr = masterFd;
+                    master = masterFd;
                 }
                 else
                 {
                     stdin = stdInFds[WRITE_END_OF_PIPE];
                     stdout = stdOutFds[READ_END_OF_PIPE];
                     stderr = stdErrFds[READ_END_OF_PIPE];
+                    master = -1;
                 }
 
                 return pid;

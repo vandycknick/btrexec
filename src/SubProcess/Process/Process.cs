@@ -80,6 +80,10 @@ namespace Nvd.SubProcess
         /// </summary>
         public void Wait(int timeout) => WaitCore();
 
+
+        // TODO: I'm not a big fan of having this method on process I think.
+        // It might be better to expose this via a seperate entity a PtyPipe object
+        // of some sorts that can be used to resize a window. I need to think about this again.
         public void SetWindowSize(int height, int width) =>
             SetWindowSizeCore(height, width);
 

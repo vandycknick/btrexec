@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Authors>Nick Van Dyck</Authors>
     <Product>BtrExec</Product>
-    <Description>Library to send/receive data with a device which respects the Modbus protocol.</Description>
+    <Description>Better .NET process library for buttery smooth executions. 🔮🧈</Description>
     <Copyright>Copyright © Nick Van Dyck</Copyright>
     <NeutralLanguage>en-UK</NeutralLanguage>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>

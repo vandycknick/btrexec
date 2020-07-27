@@ -4,8 +4,8 @@ ARTIFACTS 			:= $(shell pwd)/artifacts
 BUILD				:= $(shell pwd)/.build
 TEMP				:= $(shell pwd)/.tmp
 CONFIGURATION		:= Release
-LIB					:= src/SubProcess/Nvd.SubProcess.csproj
-UNIT_TESTS			:= test/SubProcess.Test/Nvd.SubProcess.Test.csproj
+LIB					:= src/BtrExec/BtrExec.csproj
+UNIT_TESTS			:= test/BtrExec.Test/BtrExec.Test.csproj
 
 SANDBOX_EMULATOR	:= sandbox/Emulator/Emulator.csproj
 
@@ -28,7 +28,7 @@ test:
 	dotnet test $(UNIT_TESTS) -c $(CONFIGURATION) \
 		/property:CollectCoverage=true \
 		/property:CoverletOutputFormat=lcov \
-		/property:CoverletOutput=$(TEMP)/nvd.subprocess.test/lcov.info
+		/property:CoverletOutput=$(TEMP)/BtrExec.test/lcov.info
 
 .PHONY: run-native
 run-native:

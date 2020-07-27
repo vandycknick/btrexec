@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <Authors>Nick Van Dyck</Authors>
-    <Product>SubProcess</Product>
+    <Product>BtrExec</Product>
     <Description>Library to send/receive data with a device which respects the Modbus protocol.</Description>
     <Copyright>Copyright © Nick Van Dyck</Copyright>
     <NeutralLanguage>en-UK</NeutralLanguage>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageProjectUrl>https://github.com/nickvdyck/subprocess</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/nickvdyck/subprocess.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/nickvdyck/BtrExec</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nickvdyck/BtrExec.git</RepositoryUrl>
     <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     

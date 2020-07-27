@@ -1,4 +1,4 @@
-# SubProcess
+# BtrExec
 
 [![Build status][ci-badge]][ci-url]
 [![NuGet][nuget-package-badge]][nuget-package-url]
@@ -11,11 +11,11 @@ Copyright 2020 [Nick Van Dyck](https://nvd.codes)
 
 MIT
 
-[ci-url]: https://github.com/nickvdyck/subprocess
-[ci-badge]: https://github.com/nickvdyck/subprocess/workflows/Main/badge.svg
+[ci-url]: https://github.com/nickvdyck/BtrExec
+[ci-badge]: https://github.com/nickvdyck/BtrExec/workflows/Main/badge.svg
 
-[nuget-package-url]: https://www.nuget.org/packages/Nvd.SubProcess/
-[nuget-package-badge]: https://img.shields.io/nuget/v/Nvd.SubProcess.svg?style=flat-square&label=nuget
+[nuget-package-url]: https://www.nuget.org/packages/BtrExec/
+[nuget-package-badge]: https://img.shields.io/nuget/v/BtrExec.svg?style=flat-square&label=nuget
 
-[feedz-package-url]: https://f.feedz.io/nvd/nvd-subprocess/packages/Nvd.SubProcess/latest/download
-[feedz-package-badge]: https://img.shields.io/badge/endpoint.svg?url=https%3A%2F%2Ff.feedz.io%2Fnvd%2Fnvd-subprocess%2Fshield%2FNvd.SubProcess%2Flatest&label=Nvd.SubProcess
+[feedz-package-url]: https://f.feedz.io/nvd/BtrExec/packages/BtrExec/latest/download
+[feedz-package-badge]: https://img.shields.io/badge/endpoint.svg?url=https%3A%2F%2Ff.feedz.io%2Fnvd%2FBtrExec%2Fshield%2FBtrExec%2Flatest&label=BtrExec

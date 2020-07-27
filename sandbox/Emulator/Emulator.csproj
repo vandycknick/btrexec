@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SubProcess\Nvd.SubProcess.csproj" />
+    <ProjectReference Include="..\..\src\BtrExec\BtrExec.csproj" />
   </ItemGroup>
 
 </Project>

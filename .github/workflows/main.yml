@@ -3,11 +3,11 @@ name: Main
 on:
   push:
     branches:
-      - master
+      - main
 
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -33,6 +33,6 @@ jobs:
       run: make test
 
     - name: Push packages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         dotnet nuget push artifacts/**/*.nupkg --api-key ${{ secrets.FEEDZ_IO_TOKEN }} --source https://f.feedz.io/nvd/BtrExec/nuget/index.json --skip-duplicate

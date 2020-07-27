@@ -154,7 +154,6 @@ namespace BtrExec
         private static STARTUPINFOEX ConfigureProcessThread(IntPtr hPC, IntPtr attributes)
         {
             // this method implements the behavior described in https://docs.microsoft.com/en-us/windows/console/creating-a-pseudoconsole-session#preparing-for-creation-of-the-child-process
-
             var lpSize = IntPtr.Zero;
             var success = Kernel32.InitializeProcThreadAttributeList(
                 lpAttributeList: IntPtr.Zero,

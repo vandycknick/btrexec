@@ -13,7 +13,7 @@ namespace BtrExec
         private const int READ_END_OF_PIPE = 0;
         private const int WRITE_END_OF_PIPE = 1;
 
-        private int _masterPtyFd = -1;
+        private int _controllerPtyFd = -1;
 
         private void StartCore()
         {
@@ -49,7 +49,7 @@ namespace BtrExec
                 stdin: out var stdin,
                 stdout: out var stdout,
                 stderr: out var stderr,
-                master: out _masterPtyFd
+                controller: out _controllerPtyFd
             );
 
             if (_attr.RedirectStdin)
@@ -136,7 +136,7 @@ namespace BtrExec
 
         private void SetWindowSizeCore(int height, int width)
         {
-            if (_masterPtyFd ==  -1)
+            if (_controllerPtyFd ==  -1)
             {
                 throw new InvalidOperationException("Can't resize window on a process without a pty!");
             }
@@ -150,7 +150,7 @@ namespace BtrExec
             int retVal;
             do
             {
-                retVal = Libc.ioctl((int)_masterPtyFd, Libc.TIOCSWINSZ, ref size);
+                retVal = Libc.ioctl((int)_controllerPtyFd, Libc.TIOCSWINSZ, ref size);
             } while (Error.ShouldRetrySyscall(retVal));
 
             Error.ThrowExceptionForLastErrorIf(retVal);
@@ -197,7 +197,7 @@ namespace BtrExec
             // TODO: remove this one, I don't like this current implementation
             // I think I should move Pty into a seperate entity. That way this method
             // should accept a Pty object of some sorts.
-            out int master
+            out int controller
         )
         {
             byte** argvPtr = null;
@@ -211,8 +211,8 @@ namespace BtrExec
             int[] stdInFds = new[] { -1, -1 };
             int[] stdOutFds = new[] { -1, -1 };
             int[] stdErrFds = new[] { -1, -1 };
-            int masterFd = -1;
-            int slaveFd = -1;
+            int controllerFd = -1;
+            int hostFd = -1;
 
             try
             {
@@ -238,7 +238,7 @@ namespace BtrExec
                         ws_row = DEFAULT_HEIGHT
                     };
 
-                    if (Libc.openpty(out masterFd, out slaveFd, IntPtr.Zero, IntPtr.Zero, ref size) == -1)
+                    if (Libc.openpty(out controllerFd, out hostFd, IntPtr.Zero, IntPtr.Zero, ref size) == -1)
                     {
                         success = false;
                         throw new Exception("Could not open a new pty");
@@ -271,16 +271,16 @@ namespace BtrExec
                 {
                     if (useTty)
                     {
-                        Libc.close(masterFd);
+                        Libc.close(controllerFd);
                         Libc.setsid();
 
-                        if (Libc.ioctl(slaveFd, Libc.TIOCSCTTY) == -1)
+                        if (Libc.ioctl(hostFd, Libc.TIOCSCTTY) == -1)
                         {
                             success = false;
                             Error.ThrowExceptionForLastError();
                         }
 
-                        inFd = outFd = errFd = slaveFd;
+                        inFd = outFd = errFd = hostFd;
                     }
                     else
                     {
@@ -325,21 +325,21 @@ namespace BtrExec
                     Libc._exit(Libc.errno != 0 ? Libc.errno : -1);
                 }
 
-                Libc.close(slaveFd);
+                Libc.close(hostFd);
 
                 if (useTty)
                 {
-                    stdin = masterFd;
-                    stdout = masterFd;
-                    stderr = masterFd;
-                    master = masterFd;
+                    stdin = controllerFd;
+                    stdout = controllerFd;
+                    stderr = controllerFd;
+                    controller = controllerFd;
                 }
                 else
                 {
                     stdin = stdInFds[WRITE_END_OF_PIPE];
                     stdout = stdOutFds[READ_END_OF_PIPE];
                     stderr = stdErrFds[READ_END_OF_PIPE];
-                    master = -1;
+                    controller = -1;
                 }
 
                 return pid;
@@ -355,8 +355,8 @@ namespace BtrExec
                 if (!success)
                 {
                     // Cleanup all open fd
-                    CloseIfOpen(masterFd);
-                    CloseIfOpen(slaveFd);
+                    CloseIfOpen(controllerFd);
+                    CloseIfOpen(hostFd);
 
                     CloseIfOpen(stdInFds[WRITE_END_OF_PIPE]);
                     CloseIfOpen(stdOutFds[READ_END_OF_PIPE]);

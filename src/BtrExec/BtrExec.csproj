@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>BtrExec</RootNamespace>
     <IsPackable>true</IsPackable>
-    <Description>Command-line parsing API.</Description>
+    <Description>Better .NET process library for buttery smooth executions. 🔮🧈</Description>
     <PackageTags>process</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

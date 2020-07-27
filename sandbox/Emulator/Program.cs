@@ -42,10 +42,10 @@ namespace Emulator
                 proc.Stdin.Flush();
             };
 
+            Console.WriteLine($"Starting process with pid {proc.Pid}...");
+
             var inputTask = RedirectConsoleToProcessInput(proc);
             var outputTask = RedirectProcessOutputToConsole(proc);
-
-            Console.WriteLine($"Starting process with pid {proc.Pid}...");
 
             await proc.WaitAsync();
 

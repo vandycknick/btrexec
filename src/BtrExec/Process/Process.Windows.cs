@@ -84,7 +84,6 @@ namespace BtrExec
             }
 
             Pid = processInfo.dwProcessId;
-            IsRunning = true;
         }
 
         private void KillCore()
@@ -108,6 +107,11 @@ namespace BtrExec
             }
         }
 
+        private bool PollCore()
+        {
+            
+        }
+
         private void WaitCore()
         {
             var reset = new AutoResetEvent(false)
@@ -119,7 +123,9 @@ namespace BtrExec
 
             Kernel32.GetExitCodeProcess(processInfo.hProcess, out var exitCode);
 
-            // I assume I can safely cast this one, lets hope no one uses an exit value higher then 2147483647
+            HasExited = true;
+            // Max exitcode on windows is a signed int. Not sure why docs say it returns and LPDWORD
+            // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getexitcodeprocess
             ExitCode = (int)exitCode;
         }
 

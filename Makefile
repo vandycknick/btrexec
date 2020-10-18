@@ -34,7 +34,7 @@ test:
 run-native:
 	cd src/NativeHelper && $(MAKE) 
 
-.PHONY: sandbox-3mulator
+.PHONY: sandbox-emulator
 sandbox-emulator:
 	dotnet run -p $(SANDBOX_EMULATOR)
 	

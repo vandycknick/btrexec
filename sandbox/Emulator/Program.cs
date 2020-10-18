@@ -1,5 +1,7 @@
 using System;
 using System.Buffers;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BtrExec;
@@ -23,64 +25,56 @@ namespace Emulator
             };
             var proc = Process.Start(Process.GetDefaultShell(), Array.Empty<string>(), attr);
 
-            while (!proc.IsRunning)
-            {
-                await Task.Yield();
-            }
-
             proc.SetWindowSize(Console.WindowHeight, Console.WindowWidth);
 
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
-                if (proc.IsRunning) proc.Kill();
+                if (!proc.HasExited) proc.Kill();
             };
-
-            Console.CancelKeyPress += (sender, e) =>
-            {
-                e.Cancel = true;
-                proc.Stdin.Write('\u0003');
-                proc.Stdin.Flush();
-            };
+            Console.TreatControlCAsInput = true;    
 
             Console.WriteLine($"Starting process with pid {proc.Pid}...");
+            
+            var source = new CancellationTokenSource();
+            var inputTask = RedirectConsoleToStream(proc.Stdin.BaseStream, source.Token);
+            var outputTask = proc.Stdout.BaseStream.CopyToAsync(Console.OpenStandardOutput(), source.Token);
+            var errTask = proc.Stderr.BaseStream.CopyToAsync(Console.OpenStandardError(), source.Token);
 
-            var inputTask = RedirectConsoleToProcessInput(proc);
-            var outputTask = RedirectProcessOutputToConsole(proc);
+            await Task.WhenAny(inputTask, outputTask, errTask);
 
-            await proc.WaitAsync();
+            source.Cancel();
+            proc.Wait();
 
             Console.WriteLine($"ExitCode: {proc.ExitCode}.");
             return proc.ExitCode;
         }
 
-        private static async Task RedirectConsoleToProcessInput(IProcess proc)
+        private static async Task RedirectConsoleToStream(Stream stream, CancellationToken token)
         {
-            await Task.Yield();
+            var buffer = ArrayPool<byte>.Shared.Rent(10);
 
-            while (proc.IsRunning)
+            try
             {
-                var key = Console.ReadKey(intercept: true);
-                var data = ConsoleKeyToAnsiEscape(key);
+                await Task.Yield(); // Need to make sure the rest immediatly runs on a seperate thread, otherwise Readkey will block
+         
+                while (true)
+                {
+                    var key = Console.ReadKey(intercept: true);
+                    var data = ConsoleKeyToAnsiEscape(key);
+                    var written = Encoding.UTF8.GetBytes(data, buffer);
 
-                await proc.Stdin.WriteAsync(data);
-                await proc.Stdin.FlushAsync();
+                    if (written == 0) break;
+
+                    await stream.WriteAsync(buffer, 0, written, token);
+                    await stream.FlushAsync(token);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
-
-        private static async Task RedirectProcessOutputToConsole(IProcess proc)
-        {
-            await Task.Yield();
-
-            var pool = ArrayPool<char>.Shared;
-            while (proc.IsRunning)
-            {
-                var buffer = pool.Rent(1024);
-                var read = await proc.Stdout.ReadAsync(buffer.AsMemory());
-                Console.Write(buffer, 0, read);
-            }
-        }
-
-        
+ 
         private static string ConsoleKeyToAnsiEscape(ConsoleKeyInfo key) =>
             key.Key switch
             {
@@ -108,20 +102,5 @@ namespace Emulator
                 ConsoleKey.F12 => "\x1b[24~",
                 _ => $"{key.KeyChar}",
             };
-
-        public static Task WaitAsync(this IProcess proc)
-        {
-            var source = new TaskCompletionSource<object>();
-
-            var start = new ThreadStart(() =>
-            {
-                proc.Wait();
-                source.SetResult(null);
-            });
-            var thread = new Thread(start);
-            thread.Start();
-
-            return source.Task;
-        }
     }
 }

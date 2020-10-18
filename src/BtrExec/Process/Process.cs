@@ -43,7 +43,7 @@ namespace BtrExec
         public StreamReader Stdout { get; private set; } = StreamReader.Null;
         public StreamReader Stderr { get; private set; } = StreamReader.Null;
         public int Pid { get; private set; }
-        public bool IsRunning { get; private set; }
+        public bool HasExited { get; private set; }
         public int ExitCode { get; private set; }
 
         private string _fileName { get; set; }
@@ -71,6 +71,10 @@ namespace BtrExec
         {
 
         }
+
+        private int _pollLock = 0;
+
+        public bool Poll() => PollCore();
 
         /// <summary>
         /// </summary>

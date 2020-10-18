@@ -1,17 +1,21 @@
+using BtrExec.Native;
+using BtrExec.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
-using BtrExec.Native;
-using BtrExec.Utils;
+using System.Threading;
 
 namespace BtrExec
 {
     public sealed partial class Process
     {
+        private static readonly UTF8Encoding s_utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private const int READ_END_OF_PIPE = 0;
         private const int WRITE_END_OF_PIPE = 1;
+        private const int STREAM_BUFER_SIZE = 4096;
 
         private int _controllerPtyFd = -1;
 
@@ -52,11 +56,14 @@ namespace BtrExec
                 controller: out _controllerPtyFd
             );
 
+            // This is an interesting changeset to implement: https://github.com/dotnet/runtime/pull/34861
             if (_attr.RedirectStdin)
             {
                 var handle = new SafeFileHandle((IntPtr)stdin, true);
                 Stdin = new System.IO.StreamWriter(
-                    new FileStream(handle, FileAccess.Write)
+                    new FileStream(handle, FileAccess.Write),
+                    s_utf8NoBom,
+                    STREAM_BUFER_SIZE
                 );
             }
 
@@ -64,7 +71,9 @@ namespace BtrExec
             {
                 var handle = new SafeFileHandle((IntPtr)stdout, true);
                 Stdout = new System.IO.StreamReader(
-                    new FileStream(handle, FileAccess.Read)
+                    new FileStream(handle, FileAccess.Read),
+                    s_utf8NoBom,
+                    true, STREAM_BUFER_SIZE
                 );
             }
 
@@ -72,19 +81,17 @@ namespace BtrExec
             {
                 var handle = new SafeFileHandle((IntPtr)stderr, true);
                 Stderr = new System.IO.StreamReader(
-                    new FileStream(handle, FileAccess.Read)
+                    new FileStream(handle, FileAccess.Read),
+                    s_utf8NoBom,
+                    true, STREAM_BUFER_SIZE
                 );
             }
 
             var ret = Libc.waitpid(Pid, out var status, WaitPidOptions.WNOHANG);
 
-            if (ret == 0)
+            if (ret == Pid)
             {
-                IsRunning = true;
-            }
-            else if(ret == Pid)
-            {
-                IsRunning = false;
+                HasExited = true;
                 ExitCode = GetUnixExitCode(status);
             }
         }
@@ -97,16 +104,44 @@ namespace BtrExec
             }
         }
 
+        private bool PollCore()
+        {
+            if (HasExited) return HasExited;
+
+            if (Interlocked.CompareExchange(ref _pollLock, 1, 0) == 0)
+            {
+                int result;
+                int status;
+
+                while (Error.ShouldRetrySyscall(result = Libc.waitpid(Pid, out status, WaitPidOptions.WNOHANG))) ;
+
+                if (result == Pid)
+                {
+                    HasExited = true;
+                    ExitCode = GetUnixExitCode(status);
+                }
+
+                Interlocked.Decrement(ref _pollLock);
+                return HasExited;
+            }
+            else
+            {
+                return HasExited;
+            }
+        }
+
         private void WaitCore()
         {
             int result;
             int status;
 
-            if (IsRunning == false) return;
+            if (HasExited) return;
 
             while (Error.ShouldRetrySyscall(result = Libc.waitpid(Pid, out status, WaitPidOptions.None))) ;
+
             if (result == Pid)
             {
+                HasExited = true;
                 ExitCode = GetUnixExitCode(status);
             }
             else
@@ -114,8 +149,6 @@ namespace BtrExec
                 // Unexpected.
                 Error.ThrowExceptionForLastError();
             }
-
-            IsRunning = false;
         }
 
         private int GetUnixExitCode(int status)
@@ -136,7 +169,7 @@ namespace BtrExec
 
         private void SetWindowSizeCore(int height, int width)
         {
-            if (_controllerPtyFd ==  -1)
+            if (_controllerPtyFd == -1)
             {
                 throw new InvalidOperationException("Can't resize window on a process without a pty!");
             }
@@ -165,15 +198,15 @@ namespace BtrExec
         {
             int result;
 
-            while (Error.ShouldRetrySyscall(result = Libc.pipe(pipeFds)));
+            while (Error.ShouldRetrySyscall(result = Libc.pipe(pipeFds))) ;
 
             Error.ThrowExceptionForLastErrorIf(result);
 
-            while (Error.ShouldRetrySyscall(result = Libc.fcntl(pipeFds[0], Libc.F_SETFD, Libc.FD_CLOEXEC)));
+            while (Error.ShouldRetrySyscall(result = Libc.fcntl(pipeFds[0], Libc.F_SETFD, Libc.FD_CLOEXEC))) ;
 
             if (result == 0)
             {
-                while (Error.ShouldRetrySyscall(result = Libc.fcntl(pipeFds[1], Libc.F_SETFD, Libc.FD_CLOEXEC)));
+                while (Error.ShouldRetrySyscall(result = Libc.fcntl(pipeFds[1], Libc.F_SETFD, Libc.FD_CLOEXEC))) ;
             }
 
             if (result != 0)
@@ -294,17 +327,17 @@ namespace BtrExec
                     // could catch any regressions..
                     if (redirectStdin)
                     {
-                        while (Error.ShouldRetrySyscall(Libc.dup2(inFd, Libc.STDIN_FILENO)) && Libc.errno == Libc.EBUSY);
+                        while (Error.ShouldRetrySyscall(Libc.dup2(inFd, Libc.STDIN_FILENO)) && Libc.errno == Libc.EBUSY) ;
                     }
 
                     if (redirectStdout)
                     {
-                        while (Error.ShouldRetrySyscall(Libc.dup2(outFd, Libc.STDOUT_FILENO)) && Libc.errno == Libc.EBUSY);
+                        while (Error.ShouldRetrySyscall(Libc.dup2(outFd, Libc.STDOUT_FILENO)) && Libc.errno == Libc.EBUSY) ;
                     }
 
                     if (redirectStderr)
                     {
-                        while (Error.ShouldRetrySyscall(Libc.dup2(errFd, Libc.STDERR_FILENO)) && Libc.errno == Libc.EBUSY);
+                        while (Error.ShouldRetrySyscall(Libc.dup2(errFd, Libc.STDERR_FILENO)) && Libc.errno == Libc.EBUSY) ;
                     }
 
                     if (!string.IsNullOrEmpty(cwd))

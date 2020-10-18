@@ -8,12 +8,14 @@ namespace BtrExec
         StreamWriter Stdin { get; }
         StreamReader Stdout { get; }
         StreamReader Stderr { get; }
+
         int Pid { get; }
-        bool IsRunning { get; }
+        bool HasExited { get; }
         int ExitCode { get; }
 
-        void Kill();
+        bool Poll();
         void Signal(int signal);
+        void Kill();
         void Wait();
         void Wait(int timeout);
         void SetWindowSize(int height, int width);
